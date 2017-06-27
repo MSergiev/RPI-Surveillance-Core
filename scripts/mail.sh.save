@@ -1,0 +1,1 @@
+sudo date | mail -aFrom:Homemail -aFrom:Home /home/pi/camera/tmp/snap/snap.jpg -s Doorbell drag$ /home/pi/camera/tmp/snap/snap.jpg -s Doorbell dragon9284@me.com

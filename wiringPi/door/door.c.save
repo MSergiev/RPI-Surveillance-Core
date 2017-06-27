@@ -1,0 +1,100 @@
+#include <wiringPi.h>
+#include <softTone.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <time.h>
+#include <string.h>
+
+#define SOUND 0
+#define RELAY 4
+#define SWITCH 5
+
+int beep = 3000;
+
+int period = 200;
+
+int switchTime = 0;
+int mailTime = 0;
+
+time_t t = time(NULL);
+struct tm = *localtime(&t);
+
+int relayState = 0;
+int switchState = 0;
+int relayPrevious = 0;
+int switchPrevious = 0;
+
+int switchTrigger = 0;
+
+int bell = 0;
+
+int main(void){
+   printf("%d-%d-%d %d:%d:%d: Door Monitor Started\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+   wiringPiSetup();
+   softToneCreate(SOUND);
+
+   pinMode(RELAY, INPUT);
+   pinMode(SWITCH, INPUT);
+
+   for(;;){
+      relayState = digitalRead(RELAY);
+      switchState = digitalRead(SWITCH);
+
+      if(relayState ==  1 && relayPrevious == 0){
+      printf("Doorbell has been rung!\n"); }
+      if(switchState == 1 && switchPrevious == 0){
+      printf("Door has been locked!\n"); }
+
+      if(switchState == 0 && switchPrevious == 1){
+      printf("Door has been unlocked!\n");
+      system("/home/pi/scripts/mailUnlock.sh");
+      printf("Unlock mail sent\n");
+      }
+
+
+      if(bell == 1){
+      if(switchState == 0){
+        if(switchPrevious == 1 || switchTrigger == 1){
+         if(switchTrigger == 0){
+           switchTime = millis();
+         }
+         switchTrigger = 1;
+         if((millis() - switchTime) >= 30000){
+          printf("Tone Invoked\n");
+          softToneWrite(SOUND, beep);
+          delay(period);
+          softToneWrite(SOUND, 0);
+          delay(period);
+          softToneWrite(SOUND, beep);
+          delay(period);
+          softToneWrite(SOUND, 0);
+          delay(period);
+          softToneWrite(SOUND, beep);
+          delay(period);
+          softToneWrite(SOUND, 0);
+          delay(period);
+
+          switchTrigger = 0;
+          bell = 0;
+         }
+        }
+      }
+      }
+
+      if(relayState == 1 && switchState == 1){
+        bell = 1;
+        if((millis() - mailTime) > 10000){
+         system("/home/pi/scripts/mail.sh");
+         printf("Mail sent\n");
+         mailTime = millis();
+        }
+      }
+
+      relayPrevious = relayState;
+      switchPrevious = switchState;
+   }
+   return 0;
+}
